@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Login</title>
+</head>
+<body>
+<h2>Login</h2>
+
+<input id="username" placeholder="Username"><br>
+<input id="password" type="password" placeholder="Password"><br>
+<button onclick="login()">Login</button>
+<a href="register.html">Register</a>
+
+<script>
+async function login(){
+let res = await fetch("/login",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+username:username.value,
+password:password.value
+})
+});
+let data = await res.json();
+if(data.success){
+localStorage.setItem("token",data.token);
+localStorage.setItem("username",username.value);
+window.location="chat.html";
+}else alert("Login Failed");
+}
+</script>
+</body>
+</html>
