@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>Secure Chat</h2>
+<div id="online"></div>
+
+<input id="toUser" placeholder="Send To"><br>
+<textarea id="message"></textarea><br>
+<button onclick="send()">Send</button>
+
+<h3>Create Group</h3>
+<input id="groupName">
+<button onclick="createGroup()">Create</button>
+
+<h3>Voice</h3>
+<input type="file" id="voice">
+<button onclick="uploadVoice()">Upload</button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const username = localStorage.getItem("username");
+socket.emit("join", username);
+
+socket.on("online-count",(count)=>{
+online.innerText="Online Users: "+count;
+});
+
+socket.on("receive-encrypted",(data)=>{
+alert("Encrypted message received");
+});
+
+async function send(){
+socket.emit("send-encrypted",{
+from:username,
+to:toUser.value,
+encryptedMessage:message.value
+});
+}
+
+async function createGroup(){
+let res = await fetch("/create-group",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+username,
+groupName:groupName.value
+})
+});
+let data = await res.json();
+alert(data.message || "Created");
+}
+
+async function uploadVoice(){
+let formData=new FormData();
+formData.append("voice",voice.files[0]);
+await fetch("/upload-voice",{method:"POST",body:formData});
+alert("Uploaded");
+}
+</script>
+</body>
+</html>
