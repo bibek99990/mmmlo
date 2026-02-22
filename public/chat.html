@@ -1,45 +1,68 @@
 <!DOCTYPE html>
 <html>
-<body>
-<h2>Secure Chat</h2>
-<div id="online"></div>
-
-<input id="toUser" placeholder="Send To"><br>
-<textarea id="message"></textarea><br>
-<button onclick="send()">Send</button>
-
-<h3>Create Group</h3>
-<input id="groupName">
-<button onclick="createGroup()">Create</button>
-
-<h3>Voice</h3>
-<input type="file" id="voice">
-<button onclick="uploadVoice()">Upload</button>
-
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
 <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="flex h-screen bg-gray-100">
+
+<div class="w-1/4 bg-white p-4 border-r">
+<h2 class="font-bold mb-4">SecureChat</h2>
+
+<input id="searchUser" class="border p-2 w-full mb-2" placeholder="Search username">
+<button onclick="searchUserFunc()" class="bg-blue-500 text-white w-full p-2 rounded mb-4">Start DM</button>
+
+<input id="groupName" class="border p-2 w-full mb-2" placeholder="New Group">
+<button onclick="createGroup()" class="bg-green-500 text-white w-full p-2 rounded">Create Group</button>
+
+<div id="inviteLink" class="mt-2 text-sm"></div>
+
+<button onclick="window.location='profile.html'" class="bg-gray-800 text-white w-full p-2 rounded mt-4">Profile</button>
+
+<div id="onlineCount" class="mt-4 text-sm"></div>
+</div>
+
+<div class="flex-1 flex flex-col">
+<div id="chatBox" class="flex-1 p-4 overflow-y-auto"></div>
+
+<div class="p-4 bg-white flex">
+<input id="toUser" class="border p-2 w-1/4 mr-2" placeholder="To">
+<input id="message" class="border p-2 flex-1 mr-2" placeholder="Message">
+<button onclick="send()" class="bg-blue-500 text-white px-4 rounded">Send</button>
+</div>
+</div>
+
 <script>
 const socket = io();
 const username = localStorage.getItem("username");
 socket.emit("join", username);
 
 socket.on("online-count",(count)=>{
-online.innerText="Online Users: "+count;
+onlineCount.innerText="Online: "+count;
 });
 
-socket.on("receive-encrypted",(data)=>{
-alert("Encrypted message received");
+socket.on("receive-message",(data)=>{
+chatBox.innerHTML+=`<div class="bg-gray-200 p-2 rounded mb-2">${data.from}: ${data.message}</div>`;
 });
 
-async function send(){
-socket.emit("send-encrypted",{
+function send(){
+socket.emit("send-message",{
 from:username,
 to:toUser.value,
-encryptedMessage:message.value
+message:message.value
 });
 }
 
+async function searchUserFunc(){
+let res=await fetch("/search/"+searchUser.value);
+let data=await res.json();
+if(data.success){
+toUser.value=data.username;
+}else alert("User not found");
+}
+
 async function createGroup(){
-let res = await fetch("/create-group",{
+let res=await fetch("/create-group",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({
@@ -47,15 +70,10 @@ username,
 groupName:groupName.value
 })
 });
-let data = await res.json();
-alert(data.message || "Created");
-}
-
-async function uploadVoice(){
-let formData=new FormData();
-formData.append("voice",voice.files[0]);
-await fetch("/upload-voice",{method:"POST",body:formData});
-alert("Uploaded");
+let data=await res.json();
+if(data.success){
+inviteLink.innerText="Invite Code: "+data.invite;
+}else alert(data.message);
 }
 </script>
 </body>
