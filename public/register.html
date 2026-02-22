@@ -1,38 +1,27 @@
 <!DOCTYPE html>
 <html>
-<body>
-<h2>Register</h2>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex items-center justify-center h-screen bg-gray-100">
 
-<input id="username" placeholder="Username"><br>
-<input id="password" type="password" placeholder="Password"><br>
-<button onclick="register()">Register</button>
+<div class="bg-white p-6 rounded shadow w-80">
+<h2 class="text-xl font-bold mb-4">Register</h2>
+
+<input id="username" class="border p-2 w-full mb-2" placeholder="Username">
+<input id="password" type="password" class="border p-2 w-full mb-2" placeholder="Password">
+
+<button onclick="register()" class="bg-green-500 text-white w-full p-2 rounded">Register</button>
+</div>
 
 <script>
-async function generateKeys(){
-const keyPair = await crypto.subtle.generateKey({
-name:"RSA-OAEP",
-modulusLength:2048,
-publicExponent:new Uint8Array([1,0,1]),
-hash:"SHA-256"
-},true,["encrypt","decrypt"]);
-
-const publicKey = await crypto.subtle.exportKey("spki",keyPair.publicKey);
-const privateKey = await crypto.subtle.exportKey("pkcs8",keyPair.privateKey);
-
-localStorage.setItem("privateKey",btoa(String.fromCharCode(...new Uint8Array(privateKey))));
-return btoa(String.fromCharCode(...new Uint8Array(publicKey)));
-}
-
 async function register(){
-const publicKey = await generateKeys();
-
 await fetch("/register",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({
 username:username.value,
-password:password.value,
-publicKey
+password:password.value
 })
 });
 alert("Registered");
