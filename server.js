@@ -33,7 +33,7 @@ function saveUsers(users) {
 // REGISTER
 app.post("/register", async (req, res) => {
   let users = loadUsers();
-  const { username, password, publicKey } = req.body;
+  const { username, password } = req.body;
 
   if (users.find(u => u.username === username))
     return res.json({ success: false, message: "User exists" });
@@ -44,7 +44,6 @@ app.post("/register", async (req, res) => {
     id: uuidv4(),
     username,
     password: hash,
-    publicKey,
     groups: []
   });
 
@@ -67,24 +66,60 @@ app.post("/login", async (req, res) => {
   res.json({ success: true, token });
 });
 
-// GET PUBLIC KEY
-app.get("/public-key/:username", (req, res) => {
+// SEARCH USER
+app.get("/search/:username", (req, res) => {
   let users = loadUsers();
   let user = users.find(u => u.username === req.params.username);
   if (!user) return res.json({ success: false });
-  res.json({ publicKey: user.publicKey });
+  res.json({ success: true, username: user.username });
 });
 
-// CREATE GROUP (limit 2)
+// CREATE GROUP
 app.post("/create-group", (req, res) => {
   let users = loadUsers();
   const { username, groupName } = req.body;
 
   let user = users.find(u => u.username === username);
+
   if (user.groups.length >= 2)
     return res.json({ success: false, message: "Limit 2 groups only" });
 
-  user.groups.push(groupName);
+  const invite = uuidv4();
+
+  user.groups.push({ name: groupName, invite });
+
+  saveUsers(users);
+  res.json({ success: true, invite });
+});
+
+// JOIN GROUP
+app.post("/join-group", (req, res) => {
+  let users = loadUsers();
+  const { username, invite } = req.body;
+
+  let owner = users.find(u =>
+    u.groups.find(g => g.invite === invite)
+  );
+
+  if (!owner) return res.json({ success: false });
+
+  let group = owner.groups.find(g => g.invite === invite);
+  let user = users.find(u => u.username === username);
+
+  user.groups.push(group);
+
+  saveUsers(users);
+  res.json({ success: true });
+});
+
+// PROFILE UPDATE
+app.post("/profile-update", (req, res) => {
+  let users = loadUsers();
+  const { username, newName } = req.body;
+
+  let user = users.find(u => u.username === username);
+  user.username = newName;
+
   saveUsers(users);
   res.json({ success: true });
 });
@@ -94,18 +129,18 @@ app.post("/upload-voice", upload.single("voice"), (req, res) => {
   res.json({ success: true });
 });
 
-// SOCKET.IO
+// SOCKET
 io.on("connection", (socket) => {
   socket.on("join", (username) => {
     onlineUsers[username] = socket.id;
     io.emit("online-count", Object.keys(onlineUsers).length);
   });
 
-  socket.on("send-encrypted", (data) => {
+  socket.on("send-message", (data) => {
     fs.appendFileSync("messages.txt", JSON.stringify(data) + "\n");
 
     if (onlineUsers[data.to]) {
-      io.to(onlineUsers[data.to]).emit("receive-encrypted", data);
+      io.to(onlineUsers[data.to]).emit("receive-message", data);
     }
   });
 
