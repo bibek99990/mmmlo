@@ -1,15 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Login</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<h2>Login</h2>
+<body class="flex items-center justify-center h-screen bg-gray-100">
 
-<input id="username" placeholder="Username"><br>
-<input id="password" type="password" placeholder="Password"><br>
-<button onclick="login()">Login</button>
-<a href="register.html">Register</a>
+<div class="bg-white p-6 rounded shadow w-80">
+<h2 class="text-xl font-bold mb-4">Login</h2>
+
+<input id="username" class="border p-2 w-full mb-2" placeholder="Username">
+<input id="password" type="password" class="border p-2 w-full mb-2" placeholder="Password">
+
+<button onclick="login()" class="bg-blue-500 text-white w-full p-2 rounded">Login</button>
+
+<a href="register.html" class="block text-center mt-2 text-blue-500">Register</a>
+</div>
 
 <script>
 async function login(){
@@ -23,7 +28,6 @@ password:password.value
 });
 let data = await res.json();
 if(data.success){
-localStorage.setItem("token",data.token);
 localStorage.setItem("username",username.value);
 window.location="chat.html";
 }else alert("Login Failed");
